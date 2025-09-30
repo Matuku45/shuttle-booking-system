@@ -1,93 +1,91 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../db'); // your PostgreSQL pool
+const pool = require('../db');
 
-// --- Ensure shuttle table exists ---
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS shuttles (
-        id SERIAL PRIMARY KEY,
-        route TEXT NOT NULL,
-        date DATE NOT NULL,
-        time TIME NOT NULL,
-        duration TEXT NOT NULL,
-        pickup TEXT NOT NULL,
-        seats INT NOT NULL,
-        price NUMERIC NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    console.log('✅ Shuttle table ready');
-  } catch (err) {
-    console.error('❌ Error creating shuttle table:', err);
-  }
-})();
+/**
+ * @swagger
+ * tags:
+ *   name: Shuttles
+ *   description: Shuttle management endpoints
+ */
 
-// --- Routes ---
-
-// GET all shuttles
+/**
+ * @swagger
+ * /api/shuttles:
+ *   get:
+ *     summary: Get all shuttles
+ *     tags: [Shuttles]
+ *     responses:
+ *       200:
+ *         description: List of shuttles
+ */
 router.get('/', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM shuttles ORDER BY date, time');
-    res.json(rows);
+    res.json({ success: true, shuttles: rows });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// POST add new shuttle
-// POST add new shuttle
+/**
+ * @swagger
+ * /api/shuttles/add:
+ *   post:
+ *     summary: Add a new shuttle
+ *     tags: [Shuttles]
+ */
 router.post('/add', async (req, res) => {
   const { route, date, time, duration, pickup, seats, price } = req.body;
-  if (!route || !date || !time || !duration || !pickup || !seats || !price) {
-    return res.status(400).json({ message: "All fields are required" });
-  }
   try {
     const { rows } = await pool.query(
-      `INSERT INTO shuttles (route, date, time, duration, pickup, seats, price)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [route, date, time, duration, pickup, seats, price]
+      `INSERT INTO shuttles(route,date,time,duration,pickup,seats,price)
+       VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [route,date,time,duration,pickup,seats,price]
     );
-
-    // ✅ Log shuttle creation to the console
-    console.log(`🚌 New shuttle created by user:`, rows[0]);
-
-    res.status(201).json({ shuttle: rows[0], message: `Shuttle for "${route}" on ${date} created successfully!` });
+    res.status(201).json({ success: true, shuttle: rows[0] });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
-
-// PUT edit shuttle
+/**
+ * @swagger
+ * /api/shuttles/{id}:
+ *   put:
+ *     summary: Update a shuttle
+ *     tags: [Shuttles]
+ */
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { route, date, time, duration, pickup, seats, price } = req.body;
-
+  const { route,date,time,duration,pickup,seats,price } = req.body;
   try {
     const { rows } = await pool.query(
-      `UPDATE shuttles
-       SET route=$1, date=$2, time=$3, duration=$4, pickup=$5, seats=$6, price=$7, updated_at=NOW()
+      `UPDATE shuttles SET route=$1,date=$2,time=$3,duration=$4,pickup=$5,seats=$6,price=$7,updated_at=NOW()
        WHERE id=$8 RETURNING *`,
-      [route, date, time, duration, pickup, seats, price, id]
+      [route,date,time,duration,pickup,seats,price,id]
     );
-
-    if (!rows[0]) return res.status(404).json({ message: "Shuttle not found" });
-    res.json({ shuttle: rows[0], message: `Shuttle "${route}" updated successfully!` });
+    if (!rows[0]) return res.status(404).json({ success: false, message: 'Shuttle not found' });
+    res.json({ success: true, shuttle: rows[0] });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
-// DELETE shuttle
+
+/**
+ * @swagger
+ * /api/shuttles/{id}:
+ *   delete:
+ *     summary: Delete a shuttle
+ *     tags: [Shuttles]
+ */
 router.delete('/:id', async (req, res) => {
   try {
     const { rowCount } = await pool.query('DELETE FROM shuttles WHERE id=$1', [req.params.id]);
-    if (rowCount === 0) return res.status(404).json({ message: "Shuttle not found" });
-    res.json({ message: "Shuttle deleted successfully!" });
+    if (rowCount === 0) return res.status(404).json({ success: false, message: 'Shuttle not found' });
+    res.json({ success: true, message: 'Shuttle deleted' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 

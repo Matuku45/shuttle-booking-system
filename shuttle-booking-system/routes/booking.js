@@ -2,6 +2,13 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db'); // PostgreSQL pool
 
+/**
+ * @swagger
+ * tags:
+ *   name: Bookings
+ *   description: Booking management endpoints
+ */
+
 // Middleware: check if passenger name is provided
 router.use((req, res, next) => {
   if (req.method === 'POST' && !req.body.passenger_name) {
@@ -10,7 +17,7 @@ router.use((req, res, next) => {
   next();
 });
 
-// Create bookings table if not exists
+// Ensure bookings table exists
 (async () => {
   const client = await pool.connect();
   try {
@@ -39,21 +46,29 @@ router.use((req, res, next) => {
   }
 })();
 
-// GET all bookings
+/**
+ * @swagger
+ * /api/bookings:
+ *   get:
+ *     summary: Get all bookings
+ *     tags: [Bookings]
+ */
 router.get('/', async (req, res) => {
-  const client = await pool.connect();
   try {
-    const result = await client.query('SELECT * FROM bookings ORDER BY id ASC');
-    res.json({ success: true, bookings: result.rows });
+    const { rows } = await pool.query('SELECT * FROM bookings ORDER BY id ASC');
+    res.json({ success: true, bookings: rows });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ success: false, message: 'Database error' });
-  } finally {
-    client.release();
   }
 });
 
-// POST create booking
+/**
+ * @swagger
+ * /api/bookings/create:
+ *   post:
+ *     summary: Create a new booking
+ *     tags: [Bookings]
+ */
 router.post('/create', async (req, res) => {
   const {
     passenger_name,
@@ -68,15 +83,12 @@ router.post('/create', async (req, res) => {
     price_per_seat
   } = req.body;
 
-  const client = await pool.connect();
   try {
-    // Check seats
     if (seats_left <= 0) {
       return res.status(400).json({ success: false, message: 'No seats left' });
     }
 
-    // Insert booking
-    const result = await client.query(
+    const { rows } = await pool.query(
       `INSERT INTO bookings(
         passenger_name, shuttle_id, origin, destination, departure_date, departure_time,
         duration, pickup_window, seats_left, price_per_seat
@@ -87,12 +99,9 @@ router.post('/create', async (req, res) => {
       ]
     );
 
-    res.status(201).json({ success: true, booking: result.rows[0] });
+    res.status(201).json({ success: true, booking: rows[0] });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ success: false, message: 'Database error' });
-  } finally {
-    client.release();
   }
 });
 

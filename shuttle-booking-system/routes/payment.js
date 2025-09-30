@@ -1,16 +1,44 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../db'); // PostgreSQL pool
+const pool = require('../db');
 
-// Middleware: check if amount is provided
-router.use((req, res, next) => {
-  if (req.method === 'POST' && (!req.body.amount || !req.body.passenger_name || !req.body.shuttle_id)) {
-    return res.status(400).json({ success: false, message: 'Amount, passenger_name, and shuttle_id are required' });
-  }
-  next();
-});
+/**
+ * @swagger
+ * tags:
+ *   name: Payments
+ *   description: Payment management endpoints
+ * 
+ * components:
+ *   schemas:
+ *     Payment:
+ *       type: object
+ *       required:
+ *         - passenger_name
+ *         - shuttle_id
+ *         - amount
+ *       properties:
+ *         id:
+ *           type: integer
+ *         passenger_name:
+ *           type: string
+ *         shuttle_id:
+ *           type: integer
+ *         booking_id:
+ *           type: integer
+ *         amount:
+ *           type: number
+ *         status:
+ *           type: string
+ *           default: Pending
+ *         payment_date:
+ *           type: string
+ *           format: date-time
+ *         created_at:
+ *           type: string
+ *           format: date-time
+ */
 
-// Create payments table if not exists
+// Ensure payments table exists
 (async () => {
   const client = await pool.connect();
   try {
@@ -36,37 +64,44 @@ router.use((req, res, next) => {
 
 // GET all payments
 router.get('/', async (req, res) => {
-  const client = await pool.connect();
   try {
-    const result = await client.query('SELECT * FROM payments ORDER BY id ASC');
-    res.json({ success: true, payments: result.rows });
+    const { rows } = await pool.query('SELECT * FROM payments ORDER BY id ASC');
+    res.json({ success: true, payments: rows });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Database error' });
-  } finally {
-    client.release();
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// POST create payment
+// CREATE payment
 router.post('/create', async (req, res) => {
   const { passenger_name, shuttle_id, booking_id, amount, status } = req.body;
 
-  const client = await pool.connect();
   try {
-    const result = await client.query(
-      `INSERT INTO payments(
-        passenger_name, shuttle_id, booking_id, amount, status
-      ) VALUES($1,$2,$3,$4,$5) RETURNING *`,
+    const { rows } = await pool.query(
+      `INSERT INTO payments(passenger_name, shuttle_id, booking_id, amount, status)
+       VALUES($1,$2,$3,$4,$5) RETURNING *`,
       [passenger_name, shuttle_id, booking_id || null, amount, status || 'Pending']
     );
-
-    res.status(201).json({ success: true, payment: result.rows[0] });
+    res.status(201).json({ success: true, payment: rows[0] });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Database error' });
-  } finally {
-    client.release();
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// UPDATE payment
+router.put('/:id', async (req, res) => {
+  const { id } = req.params;
+  const { amount, status } = req.body;
+
+  try {
+    const { rows } = await pool.query(
+      `UPDATE payments SET amount=$1, status=$2, payment_date=NOW() WHERE id=$3 RETURNING *`,
+      [amount, status, id]
+    );
+    if (!rows[0]) return res.status(404).json({ success: false, message: 'Payment not found' });
+    res.json({ success: true, payment: rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
