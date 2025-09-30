@@ -1,0 +1,22 @@
+extends layout
+
+block content
+  h1 Create New User
+
+  form(action="/users/create" method="POST")
+    div
+      label(for="name") Name:
+      input(type="text" name="name" value="John Doe")
+    div
+      label(for="email") Email:
+      input(type="email" name="email" value="johndoe@example.com")
+    div
+      label(for="password") Password:
+      input(type="password" name="password" value="123456")
+    div
+      label(for="role") Role:
+      select(name="role")
+        option(value="admin" selected) Admin
+        option(value="user") User
+    div
+      button(type="submit") Create
