@@ -10,13 +10,16 @@ var usersRouter = require('./routes/users');
 var signinRouter = require('./routes/signin'); // matches file name
 const shuttleRoutes = require('./routes/shuttle');
 var app = express();
-
 // CORS setup
 app.use(cors({
   origin: 'http://localhost:5173', // your React app
-  methods: ['GET', 'POST'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   credentials: true
 }));
+
+// Allow preflight for all routes
+app.options("*", cors());
+
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
