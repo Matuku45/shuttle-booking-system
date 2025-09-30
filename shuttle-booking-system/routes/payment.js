@@ -7,62 +7,29 @@ const pool = require('../db');
  * tags:
  *   name: Payments
  *   description: Payment management endpoints
- * 
- * components:
- *   schemas:
- *     Payment:
- *       type: object
- *       required:
- *         - passenger_name
- *         - shuttle_id
- *         - amount
- *       properties:
- *         id:
- *           type: integer
- *         passenger_name:
- *           type: string
- *         shuttle_id:
- *           type: integer
- *         booking_id:
- *           type: integer
- *         amount:
- *           type: number
- *         status:
- *           type: string
- *           default: Pending
- *         payment_date:
- *           type: string
- *           format: date-time
- *         created_at:
- *           type: string
- *           format: date-time
  */
 
-// Ensure payments table exists
-(async () => {
-  const client = await pool.connect();
-  try {
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS payments (
-        id SERIAL PRIMARY KEY,
-        passenger_name VARCHAR(100) NOT NULL,
-        shuttle_id INT NOT NULL,
-        booking_id INT,
-        amount NUMERIC(10,2) NOT NULL,
-        status VARCHAR(20) DEFAULT 'Pending',
-        payment_date TIMESTAMP DEFAULT NOW(),
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    console.log('Payments table ready');
-  } catch (err) {
-    console.error('Error creating payments table:', err);
-  } finally {
-    client.release();
-  }
-})();
-
-// GET all payments
+/**
+ * @swagger
+ * /api/payments:
+ *   get:
+ *     summary: Get all payments
+ *     tags: [Payments]
+ *     responses:
+ *       200:
+ *         description: List of payments
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 payments:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Payment'
+ */
 router.get('/', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM payments ORDER BY id ASC');
@@ -72,10 +39,33 @@ router.get('/', async (req, res) => {
   }
 });
 
-// CREATE payment
+/**
+ * @swagger
+ * /api/payments/create:
+ *   post:
+ *     summary: Create a new payment
+ *     tags: [Payments]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Payment'
+ *     responses:
+ *       201:
+ *         description: Payment created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 payment:
+ *                   $ref: '#/components/schemas/Payment'
+ */
 router.post('/create', async (req, res) => {
   const { passenger_name, shuttle_id, booking_id, amount, status } = req.body;
-
   try {
     const { rows } = await pool.query(
       `INSERT INTO payments(passenger_name, shuttle_id, booking_id, amount, status)
@@ -88,11 +78,46 @@ router.post('/create', async (req, res) => {
   }
 });
 
-// UPDATE payment
+/**
+ * @swagger
+ * /api/payments/{id}:
+ *   put:
+ *     summary: Update a payment
+ *     tags: [Payments]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: Payment ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               amount:
+ *                 type: number
+ *               status:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Payment updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 payment:
+ *                   $ref: '#/components/schemas/Payment'
+ */
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
   const { amount, status } = req.body;
-
   try {
     const { rows } = await pool.query(
       `UPDATE payments SET amount=$1, status=$2, payment_date=NOW() WHERE id=$3 RETURNING *`,
