@@ -8,7 +8,7 @@ const cors = require('cors');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var signinRouter = require('./routes/signin'); // matches file name
-
+const shuttleRoutes = require('./routes/shuttle');
 var app = express();
 
 // CORS setup
@@ -32,6 +32,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/users/login', signinRouter); // login route
+app.use('/api/shuttles', shuttleRoutes);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
