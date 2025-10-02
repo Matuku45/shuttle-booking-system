@@ -9,10 +9,12 @@ var debug = require('debug')('shuttle-booking-system:server');
 var http = require('http');
 
 /**
- * Get port from environment and store in Express.
+ * Get port and host from environment and store in Express.
+ * Defaults: PORT = 3000, HOST = 0.0.0.0
  */
 
 var port = normalizePort(process.env.PORT || '3000');
+var host = process.env.HOST || '0.0.0.0';
 app.set('port', port);
 
 /**
@@ -22,10 +24,16 @@ app.set('port', port);
 var server = http.createServer(app);
 
 /**
- * Listen on provided port, on all network interfaces.
+ * Listen on provided port and host.
  */
 
-server.listen(port);
+server.listen(port, host, () => {
+  const url = process.env.NODE_ENV === 'production' && process.env.FLY_APP_NAME
+    ? `https://${process.env.FLY_APP_NAME}.fly.dev`
+    : `http://${host}:${port}`;
+  console.log(`🚀 Server running at ${url}`);
+});
+
 server.on('error', onError);
 server.on('listening', onListening);
 

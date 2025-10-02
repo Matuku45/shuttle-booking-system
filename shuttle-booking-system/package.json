@@ -3,7 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www"
+    "start": "node app.js",
+    "dev": "vite dev --host 0.0.0.0",
+    "build": "vite build"
   },
   "dependencies": {
     "cookie-parser": "~1.4.4",
@@ -18,5 +20,9 @@
     "stripe": "^18.5.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "@flydotio/dockerfile": "^0.7.10",
+    "vite": "^7.1.8"
   }
 }

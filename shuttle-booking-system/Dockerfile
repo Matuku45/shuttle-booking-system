@@ -1,20 +1,18 @@
-
 FROM node:24-alpine
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files first
-COPY package.json package-lock.json ./
+# Copy package files
+COPY package*.json ./
 
-# Install all dependencies (including dev for Vite)
-RUN npm install
+# Install dependencies
+RUN npm install --production
 
-# Copy rest of the project
+# Copy app source
 COPY . .
 
-# Expose Vite dev server port
-EXPOSE 5173
+# Expose your app port
+EXPOSE 3000
 
-# Start Vite dev server
-CMD ["npx", "vite", "dev", "--host", "0.0.0.0"]
+# Start the server
+CMD ["npm", "start"]

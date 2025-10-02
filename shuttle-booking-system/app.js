@@ -6,6 +6,11 @@ const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 
+// Environment
+const PORT = process.env.PORT || 5173;          // Fly.io sets PORT
+const HOST = process.env.HOST || '0.0.0.0';    // Allow external access
+
+// Routers
 const usersRouter = require('./routes/users');
 const signinRouter = require('./routes/signin');
 const shuttleRoutes = require('./routes/shuttle');
@@ -14,8 +19,17 @@ const paymentRoutes = require('./routes/payment');
 
 const app = express();
 
-// Middlewares
-app.use(cors({ origin: 'http://localhost:5173', methods: ['GET','POST','PUT','DELETE','PATCH'], credentials: true }));
+
+
+
+
+
+// Middleware
+app.use(cors({ 
+  origin: '*', // can restrict to your frontend domain later
+  methods: ['GET','POST','PUT','DELETE','PATCH'], 
+  credentials: true 
+}));
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -100,8 +114,8 @@ const swaggerOptions = {
   apis: ['./routes/*.js']
 };
 
-const swaggerDocs = swaggerJsdoc(swaggerOptions);
 
+const swaggerDocs = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 app.get('/', (req, res) => res.redirect('/api-docs'));
 
@@ -113,11 +127,28 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
 
 // 404 handler
-app.use((req, res) => res.status(404).json({ success: false, message: "Not Found" }));
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: "Not Found" });
+});
 
 // Error handler
 app.use((err, req, res, next) => {
+  console.error(err.stack);
   res.status(err.status || 500).json({ success: false, message: err.message });
 });
 
+
+
+
+
+
+// Start server
+app.listen(PORT, HOST, () => {
+  const url = process.env.NODE_ENV === 'production' && process.env.FLY_APP_NAME
+    ? `https://${process.env.FLY_APP_NAME}.fly.dev`
+    : `http://${HOST}:${PORT}`;
+  console.log(`🚀 Server running at ${url}`);
+});
+
 module.exports = app;
+
