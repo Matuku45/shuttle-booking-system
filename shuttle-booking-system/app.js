@@ -25,11 +25,12 @@ const app = express();
 
 
 // Middleware
-app.use(cors({ 
-  origin: '*', // can restrict to your frontend domain later
-  methods: ['GET','POST','PUT','DELETE','PATCH'], 
-  credentials: true 
+app.use(cors({
+  origin: 'https://shuttle-booking-system.fly.dev',
+  methods: ['GET','POST','PUT','DELETE','PATCH'],
+  credentials: true
 }));
+
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -45,7 +46,7 @@ const swaggerOptions = {
       version: '1.0.0',
       description: 'Users, Shuttles, Bookings (CRUD), Payments (Create/Update) API'
     },
-    servers: [{ url: 'http://localhost:3000', description: 'Local server' }],
+   servers: [{ url: `https://${process.env.FLY_APP_NAME}.fly.dev`, description: 'Production server' }],
     components: {
       schemas: {
         User: {
