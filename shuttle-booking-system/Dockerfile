@@ -1,20 +1,20 @@
-# Use official Node.js LTS image
+
 FROM node:24-alpine
 
 # Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json first
+# Copy package files first
 COPY package.json package-lock.json ./
 
-# Install production dependencies only
-RUN npm install --omit=dev
+# Install all dependencies (including dev for Vite)
+RUN npm install
 
-# Copy the rest of the application
+# Copy rest of the project
 COPY . .
 
-# Expose the port your app runs on
-EXPOSE 3000
+# Expose Vite dev server port
+EXPOSE 5173
 
-# Start the app
-CMD ["node", "./bin/www"]
+# Start Vite dev server
+CMD ["npx", "vite", "dev", "--host", "0.0.0.0"]
