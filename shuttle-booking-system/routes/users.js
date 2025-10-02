@@ -94,9 +94,12 @@ router.get('/', async (req, res) => {
  *         description: User created successfully
  */
 router.post('/create', async (req, res) => {
+  console.log('Received body:', req.body);
   const { name, email, password, role } = req.body;
-  if (!name || !email || !password) return res.status(400).json({ success: false, message: 'Name, email, and password are required' });
+  if (!name || !email || !password) 
+    return res.status(400).json({ success: false, message: 'Name, email, and password are required' });
 
+  
   const client = await pool.connect();
   try {
     const result = await client.query(

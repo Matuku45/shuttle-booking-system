@@ -7,13 +7,12 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 
 // Environment
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5173;
    // Fly.io sets PORT
 const HOST = process.env.HOST || '0.0.0.0';    // Allow external access
 
 // Routers
 const usersRouter = require('./routes/users');
-const signinRouter = require('./routes/signin');
 const shuttleRoutes = require('./routes/shuttle');
 const bookingRoutes = require('./routes/booking');
 const paymentRoutes = require('./routes/payment');
@@ -137,7 +136,6 @@ app.get('/', (req, res) => res.redirect('/api-docs'));
 
 // Routes
 app.use('/users', usersRouter);
-app.use('/users/login', signinRouter);
 app.use('/api/shuttles', shuttleRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
