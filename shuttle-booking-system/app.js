@@ -1,3 +1,4 @@
+// app.js
 const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
@@ -6,61 +7,63 @@ const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 
-// Environment
-const PORT = process.env.PORT || 5173;
-   // Fly.io sets PORT
-const HOST = process.env.HOST || '0.0.0.0';    // Allow external access
+// ===== Environment =====
+const PORT = process.env.PORT || 3000;       // Backend port
+const HOST = process.env.HOST || '0.0.0.0';  // Listen on all interfaces
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// Routers
+// ===== Routers =====
 const usersRouter = require('./routes/users');
+const signinRouter = require('./routes/signin');
 const shuttleRoutes = require('./routes/shuttle');
 const bookingRoutes = require('./routes/booking');
 const paymentRoutes = require('./routes/payment');
 
 const app = express();
 
-
-
-
-
-
-// Middleware
+// ===== CORS setup =====
 const allowedOrigins = [
-  'http://localhost:3000',             // local dev
-  'https://shuttle-booking-system.fly.dev' // production
+  'https://shuttle-booking-app-rough-wind-1710.fly.dev',
+  'https://simple-shuttle-booking-system2-bold-shadow-2248.fly.dev', // your deployed frontend
 ];
 
+
+// Allow localhost in dev
+if (NODE_ENV === 'development') {
+  allowedOrigins.push('http://localhost:5173');
+  allowedOrigins.push('http://127.0.0.1:5173');
+}
+
 app.use(cors({
-  origin: function(origin, callback) {
-    // allow requests with no origin like mobile apps, Postman
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
-  methods: ['GET','POST','PUT','DELETE','PATCH'],
-  credentials: true
+  origin: allowedOrigins,
+  credentials: true,
+  methods: ['GET','POST','PUT','DELETE','PATCH','OPTIONS'],
 }));
 
-
+// ===== Middleware =====
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Swagger setup
+// ===== Swagger setup =====
 const swaggerOptions = {
   definition: {
     openapi: '3.0.3',
     info: {
       title: 'Shuttle Booking API',
       version: '1.0.0',
-      description: 'Users, Shuttles, Bookings (CRUD), Payments (Create/Update) API'
+      description: 'Users, Shuttles, Bookings (CRUD), Payments API',
     },
-   servers: [{ url: `https://${process.env.FLY_APP_NAME}.fly.dev`, description: 'Production server' }],
+    servers: [
+      {
+        url: NODE_ENV === 'production'
+          ? 'https://shuttle-booking-system.fly.dev'
+          : `http://localhost:${PORT}`,
+        description: 'Server URL',
+      },
+    ],
     components: {
       schemas: {
         User: {
@@ -71,8 +74,8 @@ const swaggerOptions = {
             username: { type: 'string' },
             email: { type: 'string', format: 'email' },
             password: { type: 'string', format: 'password' },
-            created_at: { type: 'string', format: 'date-time' }
-          }
+            created_at: { type: 'string', format: 'date-time' },
+          },
         },
         Shuttle: {
           type: 'object',
@@ -87,8 +90,8 @@ const swaggerOptions = {
             seats: { type: 'integer' },
             price: { type: 'number' },
             created_at: { type: 'string', format: 'date-time' },
-            updated_at: { type: 'string', format: 'date-time' }
-          }
+            updated_at: { type: 'string', format: 'date-time' },
+          },
         },
         Booking: {
           type: 'object',
@@ -106,8 +109,8 @@ const swaggerOptions = {
             seats_left: { type: 'integer' },
             price_per_seat: { type: 'number' },
             status: { type: 'string', default: 'Pending' },
-            created_at: { type: 'string', format: 'date-time' }
-          }
+            created_at: { type: 'string', format: 'date-time' },
+          },
         },
         Payment: {
           type: 'object',
@@ -120,49 +123,42 @@ const swaggerOptions = {
             amount: { type: 'number' },
             status: { type: 'string', default: 'Pending' },
             payment_date: { type: 'string', format: 'date-time' },
-            created_at: { type: 'string', format: 'date-time' }
-          }
-        }
-      }
-    }
+            created_at: { type: 'string', format: 'date-time' },
+          },
+        },
+      },
+    },
   },
-  apis: ['./routes/*.js']
+  apis: ['./routes/*.js'],
 };
-
 
 const swaggerDocs = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 app.get('/', (req, res) => res.redirect('/api-docs'));
 
-// Routes
+// ===== Routes =====
 app.use('/users', usersRouter);
+app.use('/users/login', signinRouter);
 app.use('/api/shuttles', shuttleRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
 
-// 404 handler
+// ===== 404 handler =====
 app.use((req, res) => {
-  res.status(404).json({ success: false, message: "Not Found" });
+  res.status(404).json({ success: false, message: 'Not Found' });
 });
 
-// Error handler
+// ===== Error handler =====
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(err.status || 500).json({ success: false, message: err.message });
+  res
+    .status(err.status || 500)
+    .json({ success: false, message: err.message || 'Internal Server Error' });
 });
 
-
-
-
-
-
-// Start server
+// ===== Start server =====
 app.listen(PORT, HOST, () => {
-  const url = process.env.NODE_ENV === 'production' && process.env.FLY_APP_NAME
-    ? `https://${process.env.FLY_APP_NAME}.fly.dev`
-    : `http://${HOST}:${PORT}`;
-  console.log(`🚀 Server running at ${url}`);
+  console.log(`🚀 Backend running in ${NODE_ENV} mode on http://${HOST}:${PORT}`);
 });
 
 module.exports = app;
-
