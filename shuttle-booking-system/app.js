@@ -24,7 +24,7 @@ const app = express();
 // ===== CORS setup =====
 const allowedOrigins = [
   'https://shuttle-booking-app-rough-wind-1710.fly.dev',
-  'https://simple-shuttle-booking-system2-bold-shadow-2248.fly.dev', // your deployed frontend
+  'https://shuttle-booking-app-blue-violet-2485.fly.dev', // your deployed frontend
 ];
 
 
