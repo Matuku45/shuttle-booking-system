@@ -43,6 +43,9 @@ let nextUserId = 1;
  *                       email:
  *                         type: string
  *                         example: john@example.com
+ *                       phone:
+ *                         type: string
+ *                         example: +1234567890
  *                       role:
  *                         type: string
  *                         example: user
@@ -80,6 +83,9 @@ router.get('/', (req, res) => {
  *               password:
  *                 type: string
  *                 example: secret123
+ *               phone:
+ *                 type: string
+ *                 example: +1234567890
  *               role:
  *                 type: string
  *                 example: user
@@ -89,7 +95,7 @@ router.get('/', (req, res) => {
  */
 router.post('/create', (req, res) => {
   console.log('Received body:', req.body);
-  const { name, email, password, role } = req.body;
+  const { name, email, password, role, phone } = req.body;
   if (!name || !email || !password)
     return res.status(400).json({ success: false, message: 'Name, email, and password are required' });
 
@@ -100,6 +106,7 @@ router.post('/create', (req, res) => {
     id: nextUserId++,
     name,
     email,
+    phone,
     password,
     role: role || 'user',
     created_at: new Date().toISOString()
@@ -132,6 +139,8 @@ router.post('/create', (req, res) => {
  *                 type: string
  *               email:
  *                 type: string
+ *               phone:
+ *                 type: string
  *               role:
  *                 type: string
  *     responses:
@@ -140,7 +149,7 @@ router.post('/create', (req, res) => {
  */
 router.put('/:id', (req, res) => {
   const { id } = req.params;
-  const { name, email, role } = req.body;
+  const { name, email, role, phone } = req.body;
 
   const userIndex = users.findIndex(u => u.id == id);
   if (userIndex === -1) return res.status(404).json({ success: false, message: 'User not found' });
@@ -148,6 +157,7 @@ router.put('/:id', (req, res) => {
   Object.assign(user, {
     name: name || user.name,
     email: email || user.email,
+    phone: phone || user.phone,
     role: role || user.role
   });
   res.json({ success: true, message: 'User updated successfully', user });
@@ -214,7 +224,7 @@ router.post('/login', (req, res) => {
   if (user.role !== role) return res.status(403).json({ success: false, message: 'Role mismatch' });
   if (user.password !== password) return res.status(401).json({ success: false, message: 'Invalid password' });
 
-  res.json({ success: true, message: 'Login successful', user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+  res.json({ success: true, message: 'Login successful', user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role } });
 });
 
 module.exports = router;
