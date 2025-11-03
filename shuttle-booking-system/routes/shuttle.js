@@ -2,8 +2,42 @@ const express = require('express');
 const router = express.Router();
 
 // In-memory storage for shuttles
-let shuttles = [];
-let nextShuttleId = 1;
+let shuttles = [
+  {
+    id: 1,
+    route: "Johannesburg to Cape Town",
+    date: "2025-10-01",
+    time: "08:00",
+    duration: "12 hours",
+    pickup: "Sandton",
+    seats: 50,
+    price: 1500,
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 2,
+    route: "Cape Town to Durban",
+    date: "2025-10-02",
+    time: "10:00",
+    duration: "10 hours",
+    pickup: "Cape Town Central",
+    seats: 40,
+    price: 1200,
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 3,
+    route: "Durban to Johannesburg",
+    date: "2025-10-03",
+    time: "14:00",
+    duration: "8 hours",
+    pickup: "Durban Station",
+    seats: 45,
+    price: 1000,
+    updated_at: new Date().toISOString()
+  }
+];
+let nextShuttleId = 4;
 
 /**
  * @swagger
@@ -21,6 +55,46 @@ let nextShuttleId = 1;
  *     responses:
  *       200:
  *         description: List of shuttles
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 shuttles:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         example: 1
+ *                       route:
+ *                         type: string
+ *                         example: "Johannesburg to Cape Town"
+ *                       date:
+ *                         type: string
+ *                         example: "2025-10-01"
+ *                       time:
+ *                         type: string
+ *                         example: "08:00"
+ *                       duration:
+ *                         type: string
+ *                         example: "12 hours"
+ *                       pickup:
+ *                         type: string
+ *                         example: "Sandton"
+ *                       seats:
+ *                         type: integer
+ *                         example: 50
+ *                       price:
+ *                         type: number
+ *                         example: 1500
+ *                       updated_at:
+ *                         type: string
+ *                         example: "2025-09-30T18:00:00Z"
  */
 router.get('/', (req, res) => {
   shuttles.sort((a, b) => new Date(a.date + ' ' + a.time) - new Date(b.date + ' ' + b.time));

@@ -2,8 +2,36 @@ const express = require('express');
 const router = express.Router();
 
 // In-memory storage for users
-let users = [];
-let nextUserId = 1;
+let users = [
+  {
+    id: 1,
+    name: "John Doe",
+    email: "john@example.com",
+    phone: "+1234567890",
+    password: "password123",
+    role: "admin",
+    created_at: "2025-09-30T10:00:00.000Z"
+  },
+  {
+    id: 2,
+    name: "Jane Smith",
+    email: "jane@example.com",
+    phone: "+0987654321",
+    password: "password456",
+    role: "passenger",
+    created_at: "2025-09-30T11:00:00.000Z"
+  },
+  {
+    id: 3,
+    name: "Bob Johnson",
+    email: "bob@example.com",
+    phone: "+1122334455",
+    password: "password789",
+    role: "passenger",
+    created_at: "2025-09-30T12:00:00.000Z"
+  }
+];
+let nextUserId = 4;
 
 /**
  * @swagger
