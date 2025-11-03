@@ -107,6 +107,83 @@ router.get('/', (req, res) => {
  *   post:
  *     summary: Add a new shuttle
  *     tags: [Shuttles]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - route
+ *               - date
+ *               - time
+ *               - duration
+ *               - pickup
+ *               - seats
+ *               - price
+ *             properties:
+ *               route:
+ *                 type: string
+ *                 example: "Johannesburg to Cape Town"
+ *               date:
+ *                 type: string
+ *                 example: "2025-10-01"
+ *               time:
+ *                 type: string
+ *                 example: "08:00"
+ *               duration:
+ *                 type: string
+ *                 example: "12 hours"
+ *               pickup:
+ *                 type: string
+ *                 example: "Sandton"
+ *               seats:
+ *                 type: integer
+ *                 example: 50
+ *               price:
+ *                 type: number
+ *                 example: 1500
+ *     responses:
+ *       201:
+ *         description: Shuttle created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 shuttle:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       example: 4
+ *                     route:
+ *                       type: string
+ *                       example: "Johannesburg to Cape Town"
+ *                     date:
+ *                       type: string
+ *                       example: "2025-10-01"
+ *                     time:
+ *                       type: string
+ *                       example: "08:00"
+ *                     duration:
+ *                       type: string
+ *                       example: "12 hours"
+ *                     pickup:
+ *                       type: string
+ *                       example: "Sandton"
+ *                     seats:
+ *                       type: integer
+ *                       example: 50
+ *                     price:
+ *                       type: number
+ *                       example: 1500
+ *                     updated_at:
+ *                       type: string
+ *                       example: "2025-09-30T18:00:00Z"
  */
 router.post('/add', (req, res) => {
   const { route, date, time, duration, pickup, seats, price } = req.body;
@@ -131,6 +208,82 @@ router.post('/add', (req, res) => {
  *   put:
  *     summary: Update a shuttle
  *     tags: [Shuttles]
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Shuttle ID
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               route:
+ *                 type: string
+ *                 example: "Johannesburg to Cape Town"
+ *               date:
+ *                 type: string
+ *                 example: "2025-10-01"
+ *               time:
+ *                 type: string
+ *                 example: "08:00"
+ *               duration:
+ *                 type: string
+ *                 example: "12 hours"
+ *               pickup:
+ *                 type: string
+ *                 example: "Sandton"
+ *               seats:
+ *                 type: integer
+ *                 example: 50
+ *               price:
+ *                 type: number
+ *                 example: 1500
+ *     responses:
+ *       200:
+ *         description: Shuttle updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 shuttle:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       example: 1
+ *                     route:
+ *                       type: string
+ *                       example: "Johannesburg to Cape Town"
+ *                     date:
+ *                       type: string
+ *                       example: "2025-10-01"
+ *                     time:
+ *                       type: string
+ *                       example: "08:00"
+ *                     duration:
+ *                       type: string
+ *                       example: "12 hours"
+ *                     pickup:
+ *                       type: string
+ *                       example: "Sandton"
+ *                     seats:
+ *                       type: integer
+ *                       example: 50
+ *                     price:
+ *                       type: number
+ *                       example: 1500
+ *                     updated_at:
+ *                       type: string
+ *                       example: "2025-09-30T18:00:00Z"
  */
 router.put('/:id', (req, res) => {
   const { id } = req.params;
@@ -157,6 +310,27 @@ router.put('/:id', (req, res) => {
  *   delete:
  *     summary: Delete a shuttle
  *     tags: [Shuttles]
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Shuttle ID
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Shuttle deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Shuttle deleted"
  */
 router.delete('/:id', (req, res) => {
   const { id } = req.params;
