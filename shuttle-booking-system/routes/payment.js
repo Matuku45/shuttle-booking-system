@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../db');
+
+// In-memory storage for payments
+let payments = [];
+let nextPaymentId = 1;
 
 /**
  * @swagger
@@ -30,13 +33,8 @@ const pool = require('../db');
  *                   items:
  *                     $ref: '#/components/schemas/Payment'
  */
-router.get('/', async (req, res) => {
-  try {
-    const { rows } = await pool.query('SELECT * FROM payments ORDER BY id ASC');
-    res.json({ success: true, payments: rows });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+router.get('/', (req, res) => {
+  res.json({ success: true, payments });
 });
 
 /**
@@ -64,18 +62,19 @@ router.get('/', async (req, res) => {
  *                 payment:
  *                   $ref: '#/components/schemas/Payment'
  */
-router.post('/create', async (req, res) => {
+router.post('/create', (req, res) => {
   const { passenger_name, shuttle_id, booking_id, amount, status } = req.body;
-  try {
-    const { rows } = await pool.query(
-      `INSERT INTO payments(passenger_name, shuttle_id, booking_id, amount, status)
-       VALUES($1,$2,$3,$4,$5) RETURNING *`,
-      [passenger_name, shuttle_id, booking_id || null, amount, status || 'Pending']
-    );
-    res.status(201).json({ success: true, payment: rows[0] });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+  const payment = {
+    id: nextPaymentId++,
+    passenger_name,
+    shuttle_id,
+    booking_id: booking_id || null,
+    amount,
+    status: status || 'Pending',
+    payment_date: new Date().toISOString()
+  };
+  payments.push(payment);
+  res.status(201).json({ success: true, payment });
 });
 
 /**
@@ -115,19 +114,18 @@ router.post('/create', async (req, res) => {
  *                 payment:
  *                   $ref: '#/components/schemas/Payment'
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', (req, res) => {
   const { id } = req.params;
   const { amount, status } = req.body;
-  try {
-    const { rows } = await pool.query(
-      `UPDATE payments SET amount=$1, status=$2, payment_date=NOW() WHERE id=$3 RETURNING *`,
-      [amount, status, id]
-    );
-    if (!rows[0]) return res.status(404).json({ success: false, message: 'Payment not found' });
-    res.json({ success: true, payment: rows[0] });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+  const paymentIndex = payments.findIndex(p => p.id == id);
+  if (paymentIndex === -1) return res.status(404).json({ success: false, message: 'Payment not found' });
+  const payment = payments[paymentIndex];
+  Object.assign(payment, {
+    amount: amount || payment.amount,
+    status: status || payment.status,
+    payment_date: new Date().toISOString()
+  });
+  res.json({ success: true, payment });
 });
 
 module.exports = router;

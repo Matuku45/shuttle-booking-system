@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../db');
+
+// In-memory storage for shuttles
+let shuttles = [];
+let nextShuttleId = 1;
 
 /**
  * @swagger
@@ -19,13 +22,9 @@ const pool = require('../db');
  *       200:
  *         description: List of shuttles
  */
-router.get('/', async (req, res) => {
-  try {
-    const { rows } = await pool.query('SELECT * FROM shuttles ORDER BY date, time');
-    res.json({ success: true, shuttles: rows });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+router.get('/', (req, res) => {
+  shuttles.sort((a, b) => new Date(a.date + ' ' + a.time) - new Date(b.date + ' ' + b.time));
+  res.json({ success: true, shuttles });
 });
 
 /**
@@ -35,18 +34,21 @@ router.get('/', async (req, res) => {
  *     summary: Add a new shuttle
  *     tags: [Shuttles]
  */
-router.post('/add', async (req, res) => {
+router.post('/add', (req, res) => {
   const { route, date, time, duration, pickup, seats, price } = req.body;
-  try {
-    const { rows } = await pool.query(
-      `INSERT INTO shuttles(route,date,time,duration,pickup,seats,price)
-       VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [route,date,time,duration,pickup,seats,price]
-    );
-    res.status(201).json({ success: true, shuttle: rows[0] });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+  const shuttle = {
+    id: nextShuttleId++,
+    route,
+    date,
+    time,
+    duration,
+    pickup,
+    seats,
+    price,
+    updated_at: new Date().toISOString()
+  };
+  shuttles.push(shuttle);
+  res.status(201).json({ success: true, shuttle });
 });
 
 /**
@@ -56,20 +58,23 @@ router.post('/add', async (req, res) => {
  *     summary: Update a shuttle
  *     tags: [Shuttles]
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', (req, res) => {
   const { id } = req.params;
   const { route,date,time,duration,pickup,seats,price } = req.body;
-  try {
-    const { rows } = await pool.query(
-      `UPDATE shuttles SET route=$1,date=$2,time=$3,duration=$4,pickup=$5,seats=$6,price=$7,updated_at=NOW()
-       WHERE id=$8 RETURNING *`,
-      [route,date,time,duration,pickup,seats,price,id]
-    );
-    if (!rows[0]) return res.status(404).json({ success: false, message: 'Shuttle not found' });
-    res.json({ success: true, shuttle: rows[0] });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+  const shuttleIndex = shuttles.findIndex(s => s.id == id);
+  if (shuttleIndex === -1) return res.status(404).json({ success: false, message: 'Shuttle not found' });
+  const shuttle = shuttles[shuttleIndex];
+  Object.assign(shuttle, {
+    route: route || shuttle.route,
+    date: date || shuttle.date,
+    time: time || shuttle.time,
+    duration: duration || shuttle.duration,
+    pickup: pickup || shuttle.pickup,
+    seats: seats || shuttle.seats,
+    price: price || shuttle.price,
+    updated_at: new Date().toISOString()
+  });
+  res.json({ success: true, shuttle });
 });
 
 /**
@@ -79,14 +84,12 @@ router.put('/:id', async (req, res) => {
  *     summary: Delete a shuttle
  *     tags: [Shuttles]
  */
-router.delete('/:id', async (req, res) => {
-  try {
-    const { rowCount } = await pool.query('DELETE FROM shuttles WHERE id=$1', [req.params.id]);
-    if (rowCount === 0) return res.status(404).json({ success: false, message: 'Shuttle not found' });
-    res.json({ success: true, message: 'Shuttle deleted' });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+router.delete('/:id', (req, res) => {
+  const { id } = req.params;
+  const shuttleIndex = shuttles.findIndex(s => s.id == id);
+  if (shuttleIndex === -1) return res.status(404).json({ success: false, message: 'Shuttle not found' });
+  shuttles.splice(shuttleIndex, 1);
+  res.json({ success: true, message: 'Shuttle deleted' });
 });
 
 module.exports = router;

@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../db');
+
+// In-memory storage for users
+let users = [];
+let nextUserId = 1;
 
 /**
  * @swagger
@@ -47,17 +50,8 @@ const pool = require('../db');
  *                         type: string
  *                         example: 2025-09-30T18:00:00Z
  */
-router.get('/', async (req, res) => {
-  const client = await pool.connect();
-  try {
-    const result = await client.query('SELECT id, name, email, role, created_at FROM users ORDER BY id ASC');
-    res.json({ success: true, users: result.rows });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Database error' });
-  } finally {
-    client.release();
-  }
+router.get('/', (req, res) => {
+  res.json({ success: true, users });
 });
 
 /**
@@ -93,27 +87,25 @@ router.get('/', async (req, res) => {
  *       201:
  *         description: User created successfully
  */
-router.post('/create', async (req, res) => {
+router.post('/create', (req, res) => {
   console.log('Received body:', req.body);
   const { name, email, password, role } = req.body;
-  if (!name || !email || !password) 
+  if (!name || !email || !password)
     return res.status(400).json({ success: false, message: 'Name, email, and password are required' });
 
-  
-  const client = await pool.connect();
-  try {
-    const result = await client.query(
-      'INSERT INTO users(name, email, password, role) VALUES($1, $2, $3, $4) RETURNING id, name, email, role, created_at',
-      [name, email, password, role || 'user']
-    );
-    res.status(201).json({ success: true, message: 'User created successfully', user: result.rows[0] });
-  } catch (err) {
-    console.error(err);
-    if (err.code === '23505') res.status(400).json({ success: false, message: 'Email already exists' });
-    else res.status(500).json({ success: false, message: 'Database error' });
-  } finally {
-    client.release();
-  }
+  const existingUser = users.find(u => u.email === email);
+  if (existingUser) return res.status(400).json({ success: false, message: 'Email already exists' });
+
+  const user = {
+    id: nextUserId++,
+    name,
+    email,
+    password,
+    role: role || 'user',
+    created_at: new Date().toISOString()
+  };
+  users.push(user);
+  res.status(201).json({ success: true, message: 'User created successfully', user });
 });
 
 /**
@@ -146,24 +138,19 @@ router.post('/create', async (req, res) => {
  *       200:
  *         description: User updated successfully
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', (req, res) => {
   const { id } = req.params;
   const { name, email, role } = req.body;
 
-  const client = await pool.connect();
-  try {
-    const result = await client.query(
-      'UPDATE users SET name=$1, email=$2, role=$3 WHERE id=$4 RETURNING id, name, email, role, created_at',
-      [name, email, role, id]
-    );
-    if (result.rows.length === 0) return res.status(404).json({ success: false, message: 'User not found' });
-    res.json({ success: true, message: 'User updated successfully', user: result.rows[0] });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Database error' });
-  } finally {
-    client.release();
-  }
+  const userIndex = users.findIndex(u => u.id == id);
+  if (userIndex === -1) return res.status(404).json({ success: false, message: 'User not found' });
+  const user = users[userIndex];
+  Object.assign(user, {
+    name: name || user.name,
+    email: email || user.email,
+    role: role || user.role
+  });
+  res.json({ success: true, message: 'User updated successfully', user });
 });
 
 /**
@@ -183,19 +170,12 @@ router.put('/:id', async (req, res) => {
  *       200:
  *         description: User deleted successfully
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', (req, res) => {
   const { id } = req.params;
-  const client = await pool.connect();
-  try {
-    const result = await client.query('DELETE FROM users WHERE id=$1 RETURNING id', [id]);
-    if (result.rows.length === 0) return res.status(404).json({ success: false, message: 'User not found' });
-    res.json({ success: true, message: 'User deleted successfully' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Database error' });
-  } finally {
-    client.release();
-  }
+  const userIndex = users.findIndex(u => u.id == id);
+  if (userIndex === -1) return res.status(404).json({ success: false, message: 'User not found' });
+  users.splice(userIndex, 1);
+  res.json({ success: true, message: 'User deleted successfully' });
 });
 
 /**
@@ -225,25 +205,16 @@ router.delete('/:id', async (req, res) => {
  *       200:
  *         description: Login successful
  */
-router.post('/login', async (req, res) => {
+router.post('/login', (req, res) => {
   const { username, password, role } = req.body;
   if (!username || !password || !role) return res.status(400).json({ success: false, message: 'All fields are required' });
 
-  const client = await pool.connect();
-  try {
-    const result = await client.query('SELECT id, name, email, password, role FROM users WHERE email=$1', [username]);
-    if (result.rows.length === 0) return res.status(401).json({ success: false, message: 'User not found' });
-    const user = result.rows[0];
-    if (user.role !== role) return res.status(403).json({ success: false, message: 'Role mismatch' });
-    if (user.password !== password) return res.status(401).json({ success: false, message: 'Invalid password' });
+  const user = users.find(u => u.email === username);
+  if (!user) return res.status(401).json({ success: false, message: 'User not found' });
+  if (user.role !== role) return res.status(403).json({ success: false, message: 'Role mismatch' });
+  if (user.password !== password) return res.status(401).json({ success: false, message: 'Invalid password' });
 
-    res.json({ success: true, message: 'Login successful', user: { id: user.id, name: user.name, email: user.email, role: user.role } });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Server error' });
-  } finally {
-    client.release();
-  }
+  res.json({ success: true, message: 'Login successful', user: { id: user.id, name: user.name, email: user.email, role: user.role } });
 });
 
 module.exports = router;

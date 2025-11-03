@@ -1,0 +1,5 @@
+- [x] Modify booking.js: Replace pool with let bookings = []; implement array-based CRUD.
+- [x] Modify payment.js: Replace pool with let payments = []; implement array-based CRUD.
+- [x] Modify shuttle.js: Replace pool with let shuttles = []; implement array-based CRUD.
+- [x] Modify users.js: Replace pool with let users = []; implement array-based CRUD.
+- [x] Modify signin.js: Replace pool with let users = []; implement array-based CRUD.
