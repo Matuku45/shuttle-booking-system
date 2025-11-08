@@ -23,8 +23,10 @@ const app = express();
 
 // ===== CORS setup =====
 const allowedOrigins = [
+  'https://metroshuttle.co.za',
   'https://shuttle-booking-app-rough-wind-1710.fly.dev',
   'https://shuttle-booking-app-blue-violet-2485.fly.dev', // your deployed frontend
+
 ];
 
 
@@ -139,7 +141,6 @@ app.get('/', (req, res) => res.redirect('/api-docs'));
 // ===== Routes =====
 app.use('/users', usersRouter);
 app.use('/users/login', signinRouter);
-app.use('/api/shuttles', shuttleRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
 
